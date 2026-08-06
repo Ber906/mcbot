@@ -9,7 +9,7 @@ const http = require('http');
 // ⚙️ SETTINGS — palitan mo ito!
 const CONFIG = {
   host: '12-valencia.aternos.me', // ← address ng server mo sa Aternos
-  port: 19132,                    // ← port (tingnan sa Aternos dashboard)
+  port: 30324,                    // ← port (tingnan sa Aternos dashboard)
   username: 'AFKBot',             // ← pangalan ng bot
   reconnectDelay: 10000,
 };
