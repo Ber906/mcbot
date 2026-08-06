@@ -5,22 +5,59 @@
 
 const bedrock = require('bedrock-protocol');
 const http = require('http');
+const fs = require('fs');
+const path = require('path');
 
 // ─── CONFIG ───────────────────────────────────────────────────
 const CONFIG = {
   host: '12-valencia.aternos.me', // ← address ng Aternos server mo
   port: 30324,                    // ← port (tingnan sa Aternos dashboard)
-  username: 'ㅤㅤㅤ',           // ← pangalan ng bot (makikita ng ibang players)
+  username: 'DreamBot',           // ← pangalan ng bot (makikita ng ibang players)
   reconnectDelay: 12000,          // ms bago mag-reconnect
   tickRate: 50,                   // ms per game tick (20 ticks/sec)
 };
 
 // ─── HTTP SERVER (para hindi matulog ang Render/host) ─────────
+// Also shows Microsoft auth code when login is needed
 const webServer = http.createServer((req, res) => {
   const uptime = Math.floor(process.uptime());
   const h = Math.floor(uptime / 3600);
   const m = Math.floor((uptime % 3600) / 60);
   const s = uptime % 60;
+
+  if (bot.pendingAuth) {
+    // Auth page — show the device code prominently
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end(`<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>DreamBot — Login Required</title>
+<meta http-equiv="refresh" content="15">
+<style>
+  body{font-family:monospace;background:#111;color:#eee;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;box-sizing:border-box}
+  .box{background:#1e1e2e;border:2px solid #f38ba8;border-radius:12px;padding:32px;max-width:480px;width:100%;text-align:center}
+  h1{color:#f38ba8;margin-bottom:8px}
+  .code{font-size:2.5rem;font-weight:bold;color:#a6e3a1;letter-spacing:6px;background:#313244;padding:16px 24px;border-radius:8px;margin:16px 0;display:inline-block}
+  a{color:#89dceb;font-size:1.1rem}
+  .step{background:#313244;border-radius:8px;padding:12px;margin:8px 0;text-align:left}
+  .step b{color:#cba6f7}
+</style>
+</head>
+<body>
+<div class="box">
+  <h1>🔑 Microsoft Login Required</h1>
+  <p>Open the link below and enter this code:</p>
+  <div class="code">${bot.pendingAuth.user_code}</div>
+  <p><a href="${bot.pendingAuth.verification_uri}" target="_blank">${bot.pendingAuth.verification_uri}</a></p>
+  <div class="step"><b>Step 1:</b> Open the link above</div>
+  <div class="step"><b>Step 2:</b> Enter the code: <b style="color:#a6e3a1">${bot.pendingAuth.user_code}</b></div>
+  <div class="step"><b>Step 3:</b> Sign in with your Microsoft account</div>
+  <div class="step"><b>Step 4:</b> This page auto-refreshes — bot will connect automatically after login ✅</div>
+  <p style="color:#6c7086;font-size:0.8rem">Code expires in ~15 minutes. Page auto-refreshes every 15s.</p>
+</div>
+</body></html>`);
+    return;
+  }
+
   res.writeHead(200, { 'Content-Type': 'text/plain' });
   res.end(
     `✅ DreamBot is ALIVE!\n` +
@@ -51,6 +88,11 @@ function log(tag, msg) {
   console.log(`[${t}] ${tags[tag] || '  '} [${tag.toUpperCase()}] ${msg}`);
 }
 
+// ─── TOKEN CACHE ──────────────────────────────────────────────
+// bedrock-protocol will cache the MS token here automatically
+const PROFILES_FOLDER = path.join(__dirname, '.auth-cache');
+if (!fs.existsSync(PROFILES_FOLDER)) fs.mkdirSync(PROFILES_FOLDER, { recursive: true });
+
 // ─── BOT STATE ────────────────────────────────────────────────
 const bot = {
   client: null,
@@ -69,6 +111,7 @@ const bot = {
   tickCount: 0,
   chatCooldown: 0,
   lastActivity: Date.now(),
+  pendingAuth: null,  // holds { user_code, verification_uri } during login
 };
 
 // ─── STATE MACHINE ────────────────────────────────────────────
@@ -437,9 +480,9 @@ function connect() {
       host: CONFIG.host,
       port: CONFIG.port,
       username: CONFIG.username,
-      offline: true,           // no Xbox Live auth needed for Aternos
+      offline: true,             // ← Gumagana kung OFFLINE MODE ang Aternos server (tingnan sa baba)
       skipPing: false,
-      connectTimeout: 20000,
+      connectTimeout: 30000,
     });
   } catch (e) {
     log('error', `Failed to create client: ${e.message}`);
@@ -452,6 +495,7 @@ function connect() {
   // ── Spawned ──────────────────────────────────────────────────
   client.on('spawn', () => {
     bot.entityId = client.entityId || BigInt(1);
+    bot.pendingAuth = null; // ← auth done, clear the login page
     setState(STATES.IDLE);
     bot.reconnectCount++;
     bot.buildPhase = 0;
@@ -461,6 +505,7 @@ function connect() {
 
     log('info', `✅ Spawned! Entity ID: ${bot.entityId}`);
     log('info', `Position: x=${Math.floor(bot.pos.x)} y=${Math.floor(bot.pos.y)} z=${Math.floor(bot.pos.z)}`);
+    log('info', `Token cached in ${PROFILES_FOLDER} — no login needed next time`);
 
     setTimeout(() => sendChat('back online!'), 3000);
   });
