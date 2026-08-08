@@ -6,12 +6,13 @@
 const bedrock = require('bedrock-protocol');
 const http = require('http');
 
-// ⚙️ SETTINGS — i-verify ang port sa Aternos kapag nag-start ka!
+// ⚙️ SETTINGS — Siguraduhing tama ang Port tuwing nag-i-start ang Aternos!
 const CONFIG = {
   host: '12-valencia.aternos.me',
   port: 30324,                   
   username: 'welcome',            
-  reconnectDelay: 12000, // 12 seconds para iwas server IP block
+  version: '1.26.33.1', // ← Explicitly set to your exact version
+  reconnectDelay: 12000,
 };
 
 // ── HTTP server para hindi matulog ang Render ──
@@ -36,35 +37,33 @@ function connect() {
     client = null;
   }
 
-  console.log(`\n🤖 Connecting to ${CONFIG.host}:${CONFIG.port} as "${CONFIG.username}"...`);
+  console.log(`\n🤖 Connecting to ${CONFIG.host}:${CONFIG.port} as "${CONFIG.username}" (v${CONFIG.version})...`);
 
   try {
     client = bedrock.createClient({
       host: CONFIG.host,
       port: CONFIG.port,
       username: CONFIG.username,
+      version: CONFIG.version, // Match server protocol
       offline: true,
-      skipPing: true, // Iwas error sa experimental packet responses
-      viewDistance: 2, // Mababang view distance para mabilis mag-load ang bot
+      skipPing: true,
+      viewDistance: 2,
     });
 
     client.on('start_game', () => {
       console.log('🎮 Game loaded! Sending readiness packet...');
-      // Magsend ng initialization para malaman ng Aternos script engine na tao ang pumasok
       client.queue('set_local_player_as_initialized', { runtime_entity_id: client.entityId });
     });
 
     client.on('spawn', () => {
       console.log('✅ Bot is IN the server! Server will stay online.');
 
-      // Anti-AFK loop: Paggawa ng konting galaw/rotation para hindi ma-kick
       if (keepAliveInterval) clearInterval(keepAliveInterval);
       
       let tick = 0;
       keepAliveInterval = setInterval(() => {
         try {
           tick++;
-          // Nagse-send ng auth input packet sa server (jump/look)
           client.queue('player_auth_input', {
             pitch: 0,
             yaw: (tick * 10) % 360,
@@ -79,9 +78,7 @@ function connect() {
             tick: BigInt(tick),
             delta: { x: 0, y: 0, z: 0 }
           });
-        } catch (e) {
-          // Ignore transient packet queue errors
-        }
+        } catch (e) {}
       }, 3000);
     });
 
