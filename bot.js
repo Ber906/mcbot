@@ -1,24 +1,21 @@
 // =============================================
 // Minecraft Bedrock AFK Bot — Render Edition
-// Compatible with Experimental Features / Beta APIs
 // =============================================
 
 const bedrock = require('bedrock-protocol');
 const http = require('http');
 
-// ⚙️ SETTINGS — Siguraduhing tama ang Port tuwing nag-i-start ang Aternos!
 const CONFIG = {
   host: '12-valencia.aternos.me',
   port: 30324,                   
   username: 'welcome',            
-  version: '1.26.33.1', // ← Explicitly set to your exact version
   reconnectDelay: 12000,
 };
 
-// ── HTTP server para hindi matulog ang Render ──
+// ── HTTP server para sa Render Web Service ──
 const server = http.createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/plain' });
-  res.end('AFK Bot is running! Server is online.');
+  res.end('AFK Bot active!');
 });
 
 const PORT = process.env.PORT || 3000;
@@ -26,7 +23,6 @@ server.listen(PORT, () => {
   console.log(`🌐 HTTP server running on port ${PORT}`);
 });
 
-// ──────────────────────────────────────────────
 let client = null;
 let reconnectTimer = null;
 let keepAliveInterval = null;
@@ -37,26 +33,24 @@ function connect() {
     client = null;
   }
 
-  console.log(`\n🤖 Connecting to ${CONFIG.host}:${CONFIG.port} as "${CONFIG.username}" (v${CONFIG.version})...`);
+  console.log(`\n🤖 Connecting to ${CONFIG.host}:${CONFIG.port} as "${CONFIG.username}"...`);
 
   try {
     client = bedrock.createClient({
       host: CONFIG.host,
       port: CONFIG.port,
       username: CONFIG.username,
-      version: CONFIG.version, // Match server protocol
       offline: true,
-      skipPing: true,
-      viewDistance: 2,
+      skipPing: false, // Hayaan ang bot na basahin ang exact protocol ng Aternos
     });
 
     client.on('start_game', () => {
-      console.log('🎮 Game loaded! Sending readiness packet...');
+      console.log('🎮 Connected! Initializing...');
       client.queue('set_local_player_as_initialized', { runtime_entity_id: client.entityId });
     });
 
     client.on('spawn', () => {
-      console.log('✅ Bot is IN the server! Server will stay online.');
+      console.log('✅ Bot is IN the server!');
 
       if (keepAliveInterval) clearInterval(keepAliveInterval);
       
@@ -83,12 +77,12 @@ function connect() {
     });
 
     client.on('disconnect', (packet) => {
-      console.log(`⚠️ Disconnected: ${packet?.reason || JSON.stringify(packet) || 'Unknown reason'}`);
+      console.log(`⚠️ Disconnected: ${packet?.reason || JSON.stringify(packet) || 'Unknown'}`);
       cleanupAndReconnect();
     });
 
     client.on('error', (err) => {
-      console.log(`❌ Network Error: ${err.message || err}`);
+      console.log(`❌ Error: ${err.message || err}`);
       cleanupAndReconnect();
     });
 
@@ -103,7 +97,6 @@ function cleanupAndReconnect() {
     clearInterval(keepAliveInterval);
     keepAliveInterval = null;
   }
-  
   if (reconnectTimer) return;
 
   console.log(`🔄 Reconnecting in ${CONFIG.reconnectDelay / 1000}s...`);
@@ -112,10 +105,5 @@ function cleanupAndReconnect() {
     connect();
   }, CONFIG.reconnectDelay);
 }
-
-console.log('╔══════════════════════════════════════╗');
-console.log('║   Minecraft Bedrock AFK Bot          ║');
-console.log('║   Render & Experimental Compatible   ║');
-console.log('╚══════════════════════════════════════╝');
 
 connect();
