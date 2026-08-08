@@ -6,6 +6,6 @@
     "start": "node bot.js"
   },
   "dependencies": {
-    "@jsprismarine/raknet": "^1.0.0"
+      "bedrock-protocol": "^3.42.0"
   }
 }
