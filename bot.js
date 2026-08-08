@@ -82,4 +82,4 @@ console.log('║   Minecraft Bedrock AFK Bot          ║');
 console.log('║   Keeps your Aternos server 
 online!  ║');
 console.log('╚══════════════════════════════════════╝');
-connect();    FIX THIS MY BEDROCK ATERNOS BOT SIMULA NG LAHAT NG MGA PINA ON MO SA AKIN AY INON KO HINDI NA SIYA NAKAKAPASOK SA SERVER
+connect();   
