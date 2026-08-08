@@ -100,7 +100,7 @@ function pickBestVersion(detectedVersion) {
     }
   }
 
-  const fallback = closestHigher || closestLower || supported[0];
+  const fallback = closestLower || closestHigher || supported[0];
   console.log(`🔧 Gagamitin na lang ang pinakamalapit na supported version: ${fallback}`);
   return fallback;
 }
@@ -139,8 +139,17 @@ async function connect() {
   }
 
   // I-detect muna ang tamang version bago kumonekta.
-  const detectedVersion = await detectServerVersion();
-  const versionToUse = detectedVersion ? pickBestVersion(detectedVersion) : null;
+  // Kung may FORCE_VERSION na naka-set sa Environment Variables ng Render,
+  // gagamitin yun sa halip — para makapag-test ka ng ibang version nang
+  // mabilis nang hindi na kailangang i-edit at i-commit ang code paulit-ulit.
+  let versionToUse;
+  if (process.env.FORCE_VERSION) {
+    versionToUse = process.env.FORCE_VERSION;
+    console.log(`📌 May FORCE_VERSION na naka-set sa environment: ${versionToUse}`);
+  } else {
+    const detectedVersion = await detectServerVersion();
+    versionToUse = detectedVersion ? pickBestVersion(detectedVersion) : null;
+  }
 
   console.log(`\n🤖 Connecting to ${CONFIG.host}:${CONFIG.port} as "${CONFIG.username}"...`);
   if (versionToUse) {
