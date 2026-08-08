@@ -10,6 +10,7 @@ const CONFIG = {
   port: 30324, // Siguraduhing tama ang Port sa Aternos dashboard habang online!
   username: 'welcome',
   reconnectDelay: 10000,
+  version: '1.26.33', // Force exact version base sa Aternos log
 };
 
 // ── HTTP server para hindi matulog ang Render ──
@@ -39,9 +40,10 @@ function connect() {
     host: CONFIG.host,
     port: CONFIG.port,
     username: CONFIG.username,
+    version: CONFIG.version,       // Naidagdag para sa bersyon
     offline: true,
-    skipPing: false,               // Kinakailangan para sa tamang UDP handshake
-    connectTimeout: 20000,          // Nagbibigay ng oras kapag mabagal mag-respond ang Aternos
+    skipPing: true,                 // Nilagay sa true para iwas Ping timeout
+    connectTimeout: 30000,          // Dinagdagan ang timeout threshold
     concurrency: 1,
   });
 
@@ -73,7 +75,7 @@ function connect() {
   });
 
   client.on('disconnect', (packet) => {
-    console.log(`⚠️ Disconnected: ${packet?.message || packet?.reason || 'Unknown reason'}`);
+    console.log(`⚠️ Disconnected: ${packet?.message || packet?.reason || JSON.stringify(packet)}`);
     scheduleReconnect();
   });
 
