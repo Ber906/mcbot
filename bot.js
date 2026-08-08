@@ -29,6 +29,46 @@ server.listen(PORT, () => {
 let client = null;
 let reconnectTimer = null;
 
+// Kinukuha ang listahan ng versions na SUPORTADO ng naka-install na
+// bedrock-protocol library (base sa package.json / node_modules mo).
+// Ginagamit ito kapag hindi supported ang exact detected version,
+// para pumili ng pinakamalapit/pinakabagong supported version
+// sa halip na basta mag-crash.
+function getSupportedVersions() {
+  try {
+    // Ito yung internal data file na ginagamit mismo ng bedrock-protocol
+    // para i-validate ang mga version (option.js dependency).
+    const options = require('bedrock-protocol/src/options.js');
+    if (options && options.Versions) return Object.keys(options.Versions);
+  } catch (e) {}
+
+  try {
+    const versions = require('bedrock-protocol/data/versions.json');
+    if (Array.isArray(versions)) return versions;
+    if (versions && typeof versions === 'object') return Object.keys(versions);
+  } catch (e) {}
+
+  return null;
+}
+
+function pickBestVersion(detectedVersion) {
+  const supported = getSupportedVersions();
+  if (!supported || supported.length === 0) return detectedVersion;
+
+  if (supported.includes(detectedVersion)) {
+    return detectedVersion;
+  }
+
+  console.log(`⚠️ Version ${detectedVersion} ay hindi supported ng naka-install na library.`);
+  console.log(`📦 Supported versions ngayon: ${supported.join(', ')}`);
+
+  // Piliin ang pinakabagong (last) supported version bilang fallback,
+  // dahil kadalasan pasulong lang ang compatibility ng Bedrock protocol.
+  const fallback = supported[supported.length - 1];
+  console.log(`🔧 Gagamitin na lang ang pinakabagong supported version: ${fallback}`);
+  return fallback;
+}
+
 // Ini-ping muna ang server para malaman ang EXACT Bedrock version
 // na kasalukuyang running, kaya hindi na kailangan i-hardcode/i-edit
 // manually tuwing nag-a-auto-update ang Aternos server version.
@@ -64,10 +104,11 @@ async function connect() {
 
   // I-detect muna ang tamang version bago kumonekta.
   const detectedVersion = await detectServerVersion();
+  const versionToUse = detectedVersion ? pickBestVersion(detectedVersion) : null;
 
   console.log(`\n🤖 Connecting to ${CONFIG.host}:${CONFIG.port} as "${CONFIG.username}"...`);
-  if (detectedVersion) {
-    console.log(`🔧 Gagamitin ang detected version: ${detectedVersion}`);
+  if (versionToUse) {
+    console.log(`🔧 Gagamitin ang version: ${versionToUse}`);
   } else {
     console.log('🔧 Walang na-detect na version — gagamitin ang default ng library (posibleng mag-mismatch).');
   }
@@ -84,11 +125,18 @@ async function connect() {
 
   // I-set lang ang version kapag successfully na-detect,
   // para hindi mag-crash kung walang laman.
-  if (detectedVersion) {
-    clientOptions.version = detectedVersion;
+  if (versionToUse) {
+    clientOptions.version = versionToUse;
   }
 
-  client = bedrock.createClient(clientOptions);
+  try {
+    client = bedrock.createClient(clientOptions);
+  } catch (err) {
+    console.log(`❌ createClient failed: ${err.message || err}`);
+    console.log('👉 Malamang kailangan i-update ang bedrock-protocol package sa package.json mo.');
+    scheduleReconnect();
+    return;
+  }
 
   client.on('start_game', () => {
     console.log('🎮 Game state received! Joining world...');
