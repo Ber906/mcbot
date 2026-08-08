@@ -7,7 +7,7 @@
     "start": "node bot.js"
   },
   "dependencies": {
-    "bedrock-protocol": "Latest"
+    "bedrock-protocol": "latest"
   },
   "engines": {
     "node": ">=18"
