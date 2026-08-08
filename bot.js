@@ -9,6 +9,7 @@ const CONFIG = {
   host: '12-valencia.aternos.me',
   port: 30324,
   username: 'welcome',
+  version: '1.26.40', // Inilagay sa 1.26.40 base sa requirement ng Aternos log (as 1.26.40)
   reconnectDelay: 10000,
 };
 
@@ -35,13 +36,13 @@ function connect() {
 
   console.log(`\n🤖 Connecting to ${CONFIG.host}:${CONFIG.port} as "${CONFIG.username}"...`);
 
-  // Inalisan ng hardcoded version 1.26.33 na nag-ca-cause ng Unsupported Version crash
   client = bedrock.createClient({
     host: CONFIG.host,
     port: CONFIG.port,
     username: CONFIG.username,
+    version: CONFIG.version,
     offline: true,
-    skipPing: false,               // Ping muna para makuha ng library ang totoong protocol ng Aternos
+    skipPing: true,               // Naka-true para lagpasan ang galaw ng Aternos ping signature mismatch
     connectTimeout: 30000,
     concurrency: 1,
   });
