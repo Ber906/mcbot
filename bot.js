@@ -51,6 +51,20 @@ function getSupportedVersions() {
   return null;
 }
 
+function parseVersionParts(v) {
+  return String(v).split('.').map((n) => parseInt(n, 10) || 0);
+}
+
+// Kumpara ng dalawang version parts, tulad ng semver comparison.
+// Negative kung a < b, positive kung a > b, 0 kung pareho.
+function compareVersionParts(a, b) {
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const diff = (a[i] || 0) - (b[i] || 0);
+    if (diff !== 0) return diff;
+  }
+  return 0;
+}
+
 function pickBestVersion(detectedVersion) {
   const supported = getSupportedVersions();
   if (!supported || supported.length === 0) return detectedVersion;
@@ -62,10 +76,32 @@ function pickBestVersion(detectedVersion) {
   console.log(`⚠️ Version ${detectedVersion} ay hindi supported ng naka-install na library.`);
   console.log(`📦 Supported versions ngayon: ${supported.join(', ')}`);
 
-  // Piliin ang pinakabagong (last) supported version bilang fallback,
-  // dahil kadalasan pasulong lang ang compatibility ng Bedrock protocol.
-  const fallback = supported[supported.length - 1];
-  console.log(`🔧 Gagamitin na lang ang pinakabagong supported version: ${fallback}`);
+  const target = parseVersionParts(detectedVersion);
+
+  // Pipiliin ang PINAKAMALAPIT na supported version sa detected version —
+  // priority: pinakamalapit na mas MATAAS/bagong version muna (mas malamang
+  // magkapareho ang protocol number sa mga magkalapit na patch),
+  // pero kung wala nang mas mataas, kukunin na lang ang pinakamalapit na mas mababa.
+  let closestHigher = null;
+  let closestLower = null;
+
+  for (const v of supported) {
+    const parts = parseVersionParts(v);
+    const cmp = compareVersionParts(parts, target);
+
+    if (cmp >= 0) {
+      if (!closestHigher || compareVersionParts(parts, parseVersionParts(closestHigher)) < 0) {
+        closestHigher = v;
+      }
+    } else {
+      if (!closestLower || compareVersionParts(parts, parseVersionParts(closestLower)) > 0) {
+        closestLower = v;
+      }
+    }
+  }
+
+  const fallback = closestHigher || closestLower || supported[0];
+  console.log(`🔧 Gagamitin na lang ang pinakamalapit na supported version: ${fallback}`);
   return fallback;
 }
 
