@@ -6,7 +6,6 @@
     "start": "node bot.js"
   },
   "dependencies": {
-    "mineflayer": "latest",
-    "mineflayer-bedrock": "latest"
+    "@jsprismarine/raknet": "^1.0.0"
   }
 }
