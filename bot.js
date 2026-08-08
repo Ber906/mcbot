@@ -79,7 +79,6 @@ function scheduleReconnect() {
 
 console.log('╔══════════════════════════════════════╗');
 console.log('║   Minecraft Bedrock AFK Bot          ║');
-console.log('║   Keeps your Aternos server 
-online!  ║');
+console.log('║   Keeps your Aternos server online!  ║');
 console.log('╚══════════════════════════════════════╝');
 connect();   
