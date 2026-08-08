@@ -7,10 +7,9 @@ const http = require('http');
 
 const CONFIG = {
   host: '12-valencia.aternos.me',
-  port: 30324, // Siguraduhing tama ang Port sa Aternos dashboard habang online!
+  port: 30324,
   username: 'welcome',
   reconnectDelay: 10000,
-  version: '1.26.33', // Force exact version base sa Aternos log
 };
 
 // ── HTTP server para hindi matulog ang Render ──
@@ -36,14 +35,14 @@ function connect() {
 
   console.log(`\n🤖 Connecting to ${CONFIG.host}:${CONFIG.port} as "${CONFIG.username}"...`);
 
+  // Inalisan ng hardcoded version 1.26.33 na nag-ca-cause ng Unsupported Version crash
   client = bedrock.createClient({
     host: CONFIG.host,
     port: CONFIG.port,
     username: CONFIG.username,
-    version: CONFIG.version,       // Naidagdag para sa bersyon
     offline: true,
-    skipPing: true,                 // Nilagay sa true para iwas Ping timeout
-    connectTimeout: 30000,          // Dinagdagan ang timeout threshold
+    skipPing: false,               // Ping muna para makuha ng library ang totoong protocol ng Aternos
+    connectTimeout: 30000,
     concurrency: 1,
   });
 
@@ -75,7 +74,7 @@ function connect() {
   });
 
   client.on('disconnect', (packet) => {
-    console.log(`⚠️ Disconnected: ${packet?.message || packet?.reason || JSON.stringify(packet)}`);
+    console.log(`⚠️ Disconnected: ${packet?.message || packet?.reason || 'Unknown reason'}`);
     scheduleReconnect();
   });
 
