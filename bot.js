@@ -9,13 +9,14 @@ const CONFIG = {
   host: '12-valencia.aternos.me',
   port: 30324,                   
   username: 'welcome',            
+  version: '1.26.33', // Exact version match sa Aternos
   reconnectDelay: 12000,
 };
 
 // ── HTTP server para sa Render Web Service ──
 const server = http.createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/plain' });
-  res.end('AFK Bot active!');
+  res.end('AFK Bot is active!');
 });
 
 const PORT = process.env.PORT || 3000;
@@ -33,24 +34,25 @@ function connect() {
     client = null;
   }
 
-  console.log(`\n🤖 Connecting to ${CONFIG.host}:${CONFIG.port} as "${CONFIG.username}"...`);
+  console.log(`\n🤖 Connecting to ${CONFIG.host}:${CONFIG.port} as "${CONFIG.username}" (v${CONFIG.version})...`);
 
   try {
     client = bedrock.createClient({
       host: CONFIG.host,
       port: CONFIG.port,
       username: CONFIG.username,
+      version: CONFIG.version, // Forced 1.26.33 para hindi maging 1.26.40
       offline: true,
-      skipPing: false, // Hayaan ang bot na basahin ang exact protocol ng Aternos
+      skipPing: true, // Iwas auto-negotiation conflict
     });
 
     client.on('start_game', () => {
-      console.log('🎮 Connected! Initializing...');
+      console.log('🎮 Game loaded! Sending readiness packet...');
       client.queue('set_local_player_as_initialized', { runtime_entity_id: client.entityId });
     });
 
     client.on('spawn', () => {
-      console.log('✅ Bot is IN the server!');
+      console.log('✅ Bot is IN the server! Server will stay online.');
 
       if (keepAliveInterval) clearInterval(keepAliveInterval);
       
@@ -82,7 +84,7 @@ function connect() {
     });
 
     client.on('error', (err) => {
-      console.log(`❌ Error: ${err.message || err}`);
+      console.log(`❌ Network Error: ${err.message || err}`);
       cleanupAndReconnect();
     });
 
