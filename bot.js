@@ -9,7 +9,6 @@ const CONFIG = {
   host: '12-valencia.aternos.me',
   port: 30324,                   
   username: 'welcome',            
-  version: '1.26.33', // Exact version match sa Aternos
   reconnectDelay: 12000,
 };
 
@@ -34,20 +33,20 @@ function connect() {
     client = null;
   }
 
-  console.log(`\n🤖 Connecting to ${CONFIG.host}:${CONFIG.port} as "${CONFIG.username}" (v${CONFIG.version})...`);
+  console.log(`\n🤖 Connecting to ${CONFIG.host}:${CONFIG.port} as "${CONFIG.username}"...`);
 
   try {
+    // Tinanggal ang version property para hindi mag-throw ng Unsupported Version error
     client = bedrock.createClient({
       host: CONFIG.host,
       port: CONFIG.port,
       username: CONFIG.username,
-      version: CONFIG.version, // Forced 1.26.33 para hindi maging 1.26.40
       offline: true,
-      skipPing: true, // Iwas auto-negotiation conflict
+      skipPing: false, 
     });
 
     client.on('start_game', () => {
-      console.log('🎮 Game loaded! Sending readiness packet...');
+      console.log('🎮 Game loaded! Initializing player state...');
       client.queue('set_local_player_as_initialized', { runtime_entity_id: client.entityId });
     });
 
